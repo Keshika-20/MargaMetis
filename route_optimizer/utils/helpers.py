@@ -13,3 +13,8 @@ def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> 
 
 def get_node_coords(graph: nx.MultiDiGraph, node: int) -> Tuple[float, float]:
     return (graph.nodes[node]['y'], graph.nodes[node]['x'])
+def estimate_travel_time(distance_m: float, avg_speed_kmh: float = 40.0) -> float:
+
+    speed_m_s = avg_speed_kmh * 1000 / 3600  # convert km/h to m/s
+    time_s = distance_m / speed_m_s
+    return time_s / 60  # convert seconds to minutes

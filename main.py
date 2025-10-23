@@ -3,6 +3,7 @@ import time
 from typing import Tuple
 
 import osmnx as ox
+from utils.helpers import estimate_travel_time
 
 from route_optimizer.optimizer import RouteOptimizer
 from route_optimizer.visualization.mapper import RouteVisualizer
@@ -60,6 +61,8 @@ def main() -> None:
         print("\nRoute Found!")
         print(f"Total Distance: {result.distance_m / 1000:.2f} km")
         print(f"Calculation Time: {duration:.3f} seconds\n")
+        travel_time_min = estimate_travel_time(result.distance_m, avg_speed_kmh=40.0)
+        print(f"Estimated Travel Time: {travel_time_min:.1f} minutes\n")
 
         # Visualize the route
         RouteVisualizer.create_and_show_map(optimizer.graph, result, origin_coords, dest_coords)
