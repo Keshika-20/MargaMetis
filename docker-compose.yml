@@ -1,0 +1,67 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: margametis
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5050:5000"
+    environment:
+      DATABASE_URL: mysql+pymysql://root:password@mysql:3306/margametis
+      SECRET_KEY: margametis-dev-secret
+      FLASK_ENV: development
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    volumes:
+      - graph_cache:/app/backend/graph_cache
+      - route_cache:/app/backend/cache
+      - logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    environment:
+      VITE_API_URL: http://localhost:5050/api
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  graph_cache:
+  route_cache:
+  logs:

@@ -1,0 +1,15 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.git
+.gitignore
+*.md
+.env
+frontend/node_modules
+frontend/dist
+graph_cache
+cache
+logs
+ml/saved_models
+*.graphml
+*.json
