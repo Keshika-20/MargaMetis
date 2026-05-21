@@ -1,56 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Navigation2 } from 'lucide-react';
 
-export const Header = ({ user, onLoginClick, onLogoutClick }) => {
-  return (
-    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">🗺️ MargaMetis</h1>
-            <p className="text-blue-100 text-xs mt-1">Intelligent Route Optimizer</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <p className="text-blue-100 text-xs hidden sm:block">Powered by OSMnx & A* Algorithm</p>
-            {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm bg-blue-700/50 px-3 py-1 rounded-md">
-                  {user.username} · {user.role}
-                </span>
-                <Link
-                  to="/user"
-                  className="text-sm bg-white text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-md"
-                >
-                  User
-                </Link>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="text-sm bg-yellow-400 text-gray-900 hover:bg-yellow-500 px-3 py-1 rounded-md"
-                  >
-                    Admin
-                  </Link>
-                )}
-                <button
-                  onClick={onLogoutClick}
-                  className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={onLoginClick}
-                  className="text-sm bg-white text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-md"
-                >
-                  Login / Register
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+export const Header = ({ user, onLoginClick, onLogoutClick }) => (
+  <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 z-50 shadow-sm">
+    <div className="flex items-center gap-2.5 flex-1">
+      <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
+        <Navigation2 className="w-4 h-4 text-white" />
       </div>
-    </header>
-  );
-};
+      <span className="font-semibold text-gray-900 text-base">MargaMetis</span>
+      <span className="text-gray-300 hidden sm:block">·</span>
+      <span className="text-xs text-gray-400 hidden sm:block">Graph Algorithms + LLM Route Intelligence</span>
+    </div>
+
+    <div className="flex items-center gap-2">
+      {user ? (
+        <>
+          <Link to="/user"
+            className="text-xs text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-md hover:bg-gray-100 transition">
+            History
+          </Link>
+          {user.role === 'admin' && (
+            <Link to="/admin"
+              className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-3 py-1.5 rounded-md transition">
+              Admin
+            </Link>
+          )}
+          <span className="text-xs text-gray-400">{user.username}</span>
+          <button onClick={onLogoutClick}
+            className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1.5 transition">
+            Sign out
+          </button>
+        </>
+      ) : (
+        <button onClick={onLoginClick}
+          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md transition font-medium">
+          Sign in
+        </button>
+      )}
+    </div>
+  </header>
+);

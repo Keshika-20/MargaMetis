@@ -1,102 +1,75 @@
 import React from 'react';
-import { Clock, Navigation, MapPin } from 'lucide-react';
+import { Clock, Navigation, Zap, Search, Database } from 'lucide-react';
+
+const Stat = ({ icon, label, value, sub, color }) => (
+  <div className={`rounded-xl p-4 ${color}`}>
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="text-xs font-medium text-gray-500">{label}</span>
+    </div>
+    <p className="text-2xl font-bold text-gray-900">{value}</p>
+    {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+  </div>
+);
 
 export const RouteDetails = ({ route }) => {
-    const vehicleTypeLabel = route.vehicle_type ? route.vehicle_type.charAt(0).toUpperCase() + route.vehicle_type.slice(1) : 'Car';
   if (!route) return null;
 
+  const astarMs   = route.algorithm_time_ms ?? Math.round((route.calculation_time_s ?? 0) * 1000);
+  const nodesExpl = route.nodes_explored;
+
   return (
-    <div className="w-full bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Route Details</h2>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+        Route Result
+      </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Distance */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <Navigation className="w-5 h-5 text-blue-600 mr-2" />
-            <span className="text-gray-600 font-medium">Distance</span>
-          </div>
-          <p className="text-3xl font-bold text-blue-600">
-            {route.distance_km} <span className="text-lg">km</span>
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            {route.distance_m.toLocaleString()} meters
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Stat icon={<Navigation className="w-4 h-4 text-blue-500" />}
+              label="Distance" color="bg-blue-50"
+              value={`${route.distance_km} km`}
+              sub={`${route.distance_m?.toLocaleString()} m`} />
 
-        {/* Calculation Time */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <Clock className="w-5 h-5 text-green-600 mr-2" />
-            <span className="text-gray-600 font-medium">Calculation Time</span>
-          </div>
-          <p className="text-3xl font-bold text-green-600">
-            {route.calculation_time_s} <span className="text-lg">s</span>
-          </p>
-          <p className="text-sm text-gray-600 mt-1">seconds</p>
-        </div>
+        <Stat icon={<Clock className="w-4 h-4 text-green-500" />}
+              label="Est. travel time" color="bg-green-50"
+              value={`${route.estimated_time_min} min`}
+              sub={`by ${route.vehicle_type}`} />
 
-        {/* Path Nodes */}
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <MapPin className="w-5 h-5 text-purple-600 mr-2" />
-            <span className="text-gray-600 font-medium">Path Nodes</span>
-          </div>
-          <p className="text-3xl font-bold text-purple-600">{route.path_nodes}</p>
-          <p className="text-sm text-gray-600 mt-1">intersection points</p>
-        </div>
+        <Stat icon={<Zap className="w-4 h-4 text-orange-500" />}
+              label="A* time" color="bg-orange-50"
+              value={`${astarMs} ms`}
+              sub="custom implementation" />
+
+        <Stat icon={<Search className="w-4 h-4 text-purple-500" />}
+              label="Nodes explored" color="bg-purple-50"
+              value={nodesExpl?.toLocaleString() ?? route.path_nodes}
+              sub="A* nodes expanded" />
       </div>
 
-      {/* Advanced Route Info */}
-      <div className="mt-6 border-t pt-6">
-        <h3 className="font-semibold text-gray-800 mb-3">Route Summary</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">From:</span>
-            <span className="font-medium text-gray-800">{route.origin.name}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">To:</span>
-            <span className="font-medium text-gray-800">{route.destination.name}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Coordinates:</span>
-            <span className="text-sm text-gray-600">
-              ({route.origin.lat.toFixed(4)}, {route.origin.lon.toFixed(4)}) →
-              ({route.destination.lat.toFixed(4)}, {route.destination.lon.toFixed(4)})
-            </span>
-          </div>
+      {/* Cache badge */}
+      {route.cache_hit !== undefined && (
+        <div className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg mb-4 ${
+          route.cache_hit
+            ? 'bg-green-50 text-green-700 border border-green-100'
+            : 'bg-gray-50 text-gray-500 border border-gray-100'
+        }`}>
+          <Database className="w-3.5 h-3.5" />
+          {route.cache_hit ? 'Served from Redis cache' : 'Computed · stored in Redis'}
         </div>
+      )}
 
-        {/* Advanced Features */}
-        <div className="mt-6">
-          <h4 className="font-semibold text-gray-800 mb-2">Advanced Route Features</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Route Type:</span>
-              <span className="font-medium text-gray-800">{route.route_type?.replace('_', ' ') || 'Shortest'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Vehicle Type:</span>
-              <span className="font-medium text-gray-800">{vehicleTypeLabel}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Estimated Travel Time:</span>
-              <span className="font-medium text-gray-800">{route.estimated_time_min} min</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Best Hour (Least Traffic):</span>
-              <span className="font-medium text-gray-800">{route.best_hour}:00</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Best Time (min):</span>
-              <span className="font-medium text-gray-800">{route.best_time_min} min</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Traffic Prediction:</span>
-              <span className="text-sm text-gray-600">{route.traffic_prediction ? route.traffic_prediction.map((v, i) => `${v.toFixed(2)}` ).join(', ') : 'N/A'}</span>
-            </div>
-          </div>
+      <div className="border-t pt-4 space-y-2.5 text-sm">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Origin</span>
+          <span className="font-medium text-gray-800 text-right max-w-[55%] truncate">{route.origin?.name}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Destination</span>
+          <span className="font-medium text-gray-800 text-right max-w-[55%] truncate">{route.destination?.name}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Optimised for</span>
+          <span className="font-medium text-gray-800 capitalize">{route.route_type?.replace('_', ' ')}</span>
         </div>
       </div>
     </div>
