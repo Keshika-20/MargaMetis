@@ -1,46 +1,42 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const api = axios.create({
-  baseURL: API_BASE_URL + '/auth',
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5050/api') + '/auth',
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 export const authService = {
-  register: async (username, password, role = 'user') => {
+  register: async (username, password) => {
     try {
-      const response = await api.post('/register', { username, password, role });
-      return response.data;
-    } catch (error) {
-      return error.response?.data || { error: 'Registration failed' };
+      const res = await api.post('/register', { username, password, role: 'user' });
+      return res.data;
+    } catch (err) {
+      return err.response?.data || { error: 'Registration failed' };
     }
   },
   login: async (username, password) => {
     try {
-      const response = await api.post('/login', { username, password });
-      return response.data;
-    } catch (error) {
-      return error.response?.data || { error: 'Login failed' };
+      const res = await api.post('/login', { username, password });
+      return res.data;
+    } catch (err) {
+      return err.response?.data || { error: 'Invalid credentials' };
     }
   },
   logout: async () => {
     try {
-      const response = await api.post('/logout');
-      return response.data;
-    } catch (error) {
-      return error.response?.data || { error: 'Logout failed' };
+      const res = await api.post('/logout');
+      return res.data;
+    } catch (err) {
+      return { success: false };
     }
   },
   me: async () => {
     try {
-      const response = await api.get('/me');
-      return response.data;
-    } catch (error) {
-      return error.response?.data || { error: 'Not logged in' };
+      const res = await api.get('/me');
+      return res.data;
+    } catch {
+      return { logged_in: false };
     }
   },
 };

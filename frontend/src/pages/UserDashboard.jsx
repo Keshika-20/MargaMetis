@@ -1,132 +1,112 @@
 import React, { useEffect, useState } from 'react';
 import { userService } from '../services/user';
+import { Clock, Navigation2, MapPin, ArrowRight, Loader } from 'lucide-react';
+
+const ROUTE_TYPE_LABEL = {
+  shortest:   'Shortest',
+  fuel:       'Fuel efficient',
+  green:      'Eco / Green',
+  avoid_main: 'Avoid main roads',
+};
 
 export const UserDashboard = () => {
-  const [tab, setTab] = useState('history');
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [history, setHistory]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
-    if (tab === 'history') {
-      loadHistory();
-    }
-  }, [tab]);
+    (async () => {
+      const res = await userService.history(1, 50);
+      if (res?.success) setHistory(res.items || []);
+      else setError(res?.error || 'Could not load history');
+      setLoading(false);
+    })();
+  }, []);
 
-  const loadHistory = async () => {
-    setLoading(true);
-    const res = await userService.history(1, 50);
-    if (res && res.success) {
-      setItems(res.items || []);
-      setError(null);
-    } else {
-      setError(res?.error || 'Failed to load history');
-    }
-    setLoading(false);
-  };
-
-  const viewOnMap = async (id) => {
+  const viewOnMap = async id => {
     const res = await userService.historyItem(id);
-    if (res && res.success) {
-      try {
-        localStorage.setItem('selectedRoute', JSON.stringify(res.result));
-        window.location.href = '/';
-      } catch (e) {
-        setError('Could not open route on map');
-      }
-    } else {
-      setError(res?.error || 'Failed to open history item');
+    if (res?.success) {
+      localStorage.setItem('selectedRoute', JSON.stringify(res.result));
+      window.location.href = '/';
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">User Dashboard</h2>
+    <div className="min-h-full bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
 
-      <div className="flex gap-2 mb-6">
-        <button
-          className={`px-3 py-1 rounded-md text-sm ${tab === 'history' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          onClick={() => setTab('history')}
-        >
-          Search History
-        </button>
-        <button
-          className={`px-3 py-1 rounded-md text-sm ${tab === 'features' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          onClick={() => setTab('features')}
-        >
-          Advanced Features
-        </button>
-        <button
-          className={`px-3 py-1 rounded-md text-sm ${tab === 'settings' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          onClick={() => setTab('settings')}
-        >
-          Settings
-        </button>
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Route History</h1>
+          <p className="text-sm text-gray-500 mt-1">Your previous route searches</p>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center h-40 text-gray-400">
+            <Loader className="w-5 h-5 animate-spin mr-2" /> Loading...
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && history.length === 0 && (
+          <div className="bg-white border border-gray-100 rounded-xl p-12 text-center">
+            <Navigation2 className="w-8 h-8 text-gray-200 mx-auto mb-3" />
+            <p className="text-sm text-gray-400">No routes yet — search for a route on the map</p>
+          </div>
+        )}
+
+        {!loading && history.length > 0 && (
+          <div className="space-y-2">
+            {history.map(item => (
+              <div key={item.id}
+                className="bg-white border border-gray-100 rounded-xl px-5 py-4 flex items-center gap-4 hover:shadow-sm transition">
+
+                {/* Origin → Destination */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-sm text-gray-800 font-medium truncate">
+                    <MapPin className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                    <span className="truncate">{item.origin}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                    <span className="truncate">{item.destination}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+                    <span>{ROUTE_TYPE_LABEL[item.route_type] || item.route_type}</span>
+                    <span>·</span>
+                    <span className="capitalize">{item.vehicle_type}</span>
+                    <span>·</span>
+                    <span>{(item.distance_m / 1000).toFixed(1)} km</span>
+                    {item.estimated_time_min && (
+                      <>
+                        <span>·</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {Math.round(item.estimated_time_min)} min
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Date */}
+                <span className="text-xs text-gray-300 flex-shrink-0 hidden sm:block">
+                  {new Date(item.created_at).toLocaleDateString()}
+                </span>
+
+                {/* Action */}
+                <button onClick={() => viewOnMap(item.id)}
+                  className="flex-shrink-0 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium
+                    px-3 py-1.5 rounded-lg transition">
+                  View on map
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {error && <div className="text-red-600 mb-3">{error}</div>}
-
-      {tab === 'history' && (
-        <div className="bg-white rounded-lg shadow p-4">
-          {loading ? (
-            <div>Loading...</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-600">
-                  <th className="py-2">Origin</th>
-                  <th className="py-2">Destination</th>
-                  <th className="py-2">Route Type</th>
-                  <th className="py-2">Vehicle</th>
-                  <th className="py-2">Distance (km)</th>
-                  <th className="py-2">Time (min)</th>
-                  <th className="py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it) => (
-                  <tr key={it.id} className="border-t">
-                    <td className="py-2">{it.origin}</td>
-                    <td className="py-2">{it.destination}</td>
-                    <td className="py-2">{it.route_type}</td>
-                    <td className="py-2">{it.vehicle_type}</td>
-                    <td className="py-2">{(it.distance_m / 1000).toFixed(2)}</td>
-                    <td className="py-2">{Math.round(it.estimated_time_min || 0)}</td>
-                    <td className="py-2">
-                      <button
-                        onClick={() => viewOnMap(it.id)}
-                        className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                      >
-                        View on Map
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {tab === 'features' && (
-        <div className="bg-white rounded-lg shadow p-4 space-y-3">
-          <h3 className="font-semibold">Available Features</h3>
-          <ul className="list-disc pl-5 text-sm">
-            <li>Cost-efficient, fuel-efficient, green, traffic-free routing</li>
-            <li>Vehicle-specific travel times (car, bike, truck)</li>
-            <li>Traffic prediction and best hour recommendation</li>
-            <li>Map auto-fit to route bounds and India default</li>
-            <li>Search history caching with instant reuse</li>
-          </ul>
-        </div>
-      )}
-
-      {tab === 'settings' && (
-        <div className="bg-white rounded-lg shadow p-4 space-y-3">
-          <h3 className="font-semibold">Account Settings</h3>
-          <p className="text-sm text-gray-600">Manage your profile. (More controls can be added: change password, update details.)</p>
-        </div>
-      )}
     </div>
   );
 };
