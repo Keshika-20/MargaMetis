@@ -30,8 +30,8 @@ def create_app(config_name='development'):
 
     @app.after_request
     def add_cors(response):
-        origin = request.headers.get('Origin', '')
-        if origin in allowed_origins:
+        origin = request.headers.get('Origin')
+        if origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -41,9 +41,9 @@ def create_app(config_name='development'):
     @app.before_request
     def handle_preflight():
         if request.method == 'OPTIONS':
-            origin = request.headers.get('Origin', '')
             resp = make_response()
-            if origin in allowed_origins:
+            origin = request.headers.get('Origin')
+            if origin:
                 resp.headers['Access-Control-Allow-Origin'] = origin
                 resp.headers['Access-Control-Allow-Credentials'] = 'true'
                 resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
