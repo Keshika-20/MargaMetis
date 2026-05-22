@@ -18,15 +18,13 @@ def create_app(config_name='development'):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-    CORS(
-        app,
-        supports_credentials=True,
-        origins=[
-            "http://localhost:3000", "http://127.0.0.1:3000",
-            "http://localhost:3030", "http://127.0.0.1:3030",
-            "http://localhost:5173", "http://127.0.0.1:5173",
-        ]
-    )
+    base_origins = [
+        "http://localhost:3000", "http://127.0.0.1:3000",
+        "http://localhost:3030", "http://127.0.0.1:3030",
+        "http://localhost:5173", "http://127.0.0.1:5173",
+    ]
+    extra = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+    CORS(app, supports_credentials=True, origins=base_origins + extra)
 
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE'] = False
