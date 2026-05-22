@@ -26,15 +26,13 @@ function MapBoundsEffect({ points, mapRef }) {
 export const RouteMap = ({
   origin,
   destination,
-  pathCoordinates,  // standard mode
-  routes,           // smart mode (K routes)
+  pathCoordinates,
+  routes,
   activeRouteIndex,
 }) => {
   const mapRef = React.useRef();
-  // Default: world view — auto-fits to route on first result
-  const center = [20.0, 78.0];  // India centre, zooms out for global use
+  const center = [20.0, 78.0]; // India centre — auto-zooms to route once loaded
 
-  // Determine which set of points to use for fitting bounds
   const allPoints = React.useMemo(() => {
     if (routes && routes.length > 0 && routes[0].path_coordinates?.length > 0) {
       return routes[0].path_coordinates.map(c => [c.lat, c.lon]);
@@ -58,12 +56,10 @@ export const RouteMap = ({
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {/* Auto-fit bounds */}
         {allPoints.length > 0 && (
           <MapBoundsEffect points={allPoints} mapRef={mapRef} />
         )}
 
-        {/* ── Origin marker ── */}
         {origin && (
           <Marker position={[origin.lat, origin.lon]}>
             <Popup>
@@ -73,7 +69,6 @@ export const RouteMap = ({
           </Marker>
         )}
 
-        {/* ── Destination marker ── */}
         {destination && (
           <Marker position={[destination.lat, destination.lon]}>
             <Popup>
@@ -83,7 +78,6 @@ export const RouteMap = ({
           </Marker>
         )}
 
-        {/* ── Multi-route polylines ── */}
         {routes && routes.map((route, idx) => {
           const coords = route.path_coordinates?.map(c => [c.lat, c.lon]) || [];
           if (coords.length === 0) return null;
@@ -108,7 +102,6 @@ export const RouteMap = ({
           );
         })}
 
-        {/* ── Legacy single-route polyline ── */}
         {!routes && pathCoordinates?.length > 0 && (
           <Polyline
             positions={pathCoordinates.map(c => [c.lat, c.lon])}

@@ -40,7 +40,6 @@ export const AuthModal = ({ open, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
@@ -54,7 +53,6 @@ export const AuthModal = ({ open, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex mx-5 bg-gray-100 rounded-lg p-0.5 mb-5">
           {['login', 'register'].map(t => (
             <button key={t} onClick={() => switchTab(t)}
