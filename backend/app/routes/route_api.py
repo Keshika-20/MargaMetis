@@ -125,7 +125,7 @@ def calculate_route():
 
             # Log search into database
             try:
-                username = session.get('username')
+                username = session.get('username') or request.headers.get('X-Username')
                 user_id = None
                 if username:
                     user = User.query.filter_by(username=username).first()

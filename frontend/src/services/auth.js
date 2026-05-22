@@ -18,6 +18,7 @@ export const authService = {
   login: async (username, password) => {
     try {
       const res = await api.post('/login', { username, password });
+      if (res.data?.success) localStorage.setItem('mm_user', username);
       return res.data;
     } catch (err) {
       return err.response?.data || { error: 'Invalid credentials' };
@@ -25,9 +26,11 @@ export const authService = {
   },
   logout: async () => {
     try {
+      localStorage.removeItem('mm_user');
       const res = await api.post('/logout');
       return res.data;
     } catch (err) {
+      localStorage.removeItem('mm_user');
       return { success: false };
     }
   },

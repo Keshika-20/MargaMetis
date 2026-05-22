@@ -6,11 +6,11 @@ user_bp = Blueprint('user', __name__)
 
 
 def require_login():
-    return session.get('username') is not None
+    return bool(session.get('username') or request.headers.get('X-Username'))
 
 
 def current_user():
-    username = session.get('username')
+    username = session.get('username') or request.headers.get('X-Username')
     if not username:
         return None
     return User.query.filter_by(username=username).first()

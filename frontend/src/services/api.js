@@ -6,6 +6,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+api.interceptors.request.use(cfg => {
+  const u = localStorage.getItem('mm_user');
+  if (u) cfg.headers['X-Username'] = u;
+  return cfg;
+});
+
 export const routeService = {
   /** Standard mode: fixed route type + vehicle */
   calculateRoute: async (
