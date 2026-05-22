@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from app.models import db, SearchHistory
 
 admin_bp = Blueprint('admin', __name__)
@@ -64,11 +64,11 @@ def stats():
         {'hour': int(h or 0), 'count': int(c or 0)}
         for h, c in (
             db.session.query(
-                func.hour(SearchHistory.created_at).label('hour'),
+                extract('hour', SearchHistory.created_at).label('hour'),
                 func.count(SearchHistory.id).label('count')
             )
-            .group_by(func.hour(SearchHistory.created_at))
-            .order_by(func.hour(SearchHistory.created_at))
+            .group_by(extract('hour', SearchHistory.created_at))
+            .order_by(extract('hour', SearchHistory.created_at))
             .all()
         )
     ]

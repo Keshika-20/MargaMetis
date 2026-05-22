@@ -52,11 +52,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5050/api
     restart: unless-stopped
     ports:
-      - "3030:3000"
-    environment:
-      VITE_API_URL: http://localhost:5050/api
+      - "3030:80"
     depends_on:
       - backend
 
