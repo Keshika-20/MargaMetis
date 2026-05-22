@@ -18,3 +18,8 @@ node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+logs/
+memory/
+ml/saved_models/
+graph_cache/
+cache/
