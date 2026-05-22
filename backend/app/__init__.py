@@ -1,5 +1,4 @@
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask, request, make_response
 import logging
 import os
 
@@ -18,16 +17,40 @@ def create_app(config_name='development'):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-    base_origins = [
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+    app.config['SESSION_COOKIE_SECURE'] = True
+
+    _base = [
         "http://localhost:3000", "http://127.0.0.1:3000",
         "http://localhost:3030", "http://127.0.0.1:3030",
         "http://localhost:5173", "http://127.0.0.1:5173",
     ]
-    extra = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
-    CORS(app, supports_credentials=True, origins=base_origins + extra)
+    _extra = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+    allowed_origins = set(_base + _extra)
 
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['SESSION_COOKIE_SECURE'] = False
+    @app.after_request
+    def add_cors(response):
+        origin = request.headers.get('Origin', '')
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
+
+    @app.before_request
+    def handle_preflight():
+        if request.method == 'OPTIONS':
+            origin = request.headers.get('Origin', '')
+            resp = make_response()
+            if origin in allowed_origins:
+                resp.headers['Access-Control-Allow-Origin'] = origin
+                resp.headers['Access-Control-Allow-Credentials'] = 'true'
+                resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+                resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                resp.headers['Access-Control-Max-Age'] = '86400'
+            resp.status_code = 204
+            return resp
 
     from app.models import db
     db.init_app(app)
