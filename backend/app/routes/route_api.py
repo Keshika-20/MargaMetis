@@ -125,26 +125,30 @@ def calculate_route():
 
             # Log search into database
             try:
+                db.session.rollback()
                 username = session.get('username') or request.headers.get('X-Username')
                 user_id = None
                 if username:
                     user = User.query.filter_by(username=username).first()
-                    if user:
-                        user_id = user.id
+                    user_id = user.id if user else None
+                # Strip path_coordinates — too large for JSON column, not needed for history
+                save_json = {k: v for k, v in response_payload.items() if k != 'path_coordinates'}
                 record = SearchHistory(
                     user_id=user_id,
                     origin=origin,
                     destination=destination,
                     route_type=route_type,
                     vehicle_type=vehicle_type,
-                    distance_m=response_payload['distance_m'],
+                    distance_m=float(response_payload['distance_m']),
                     estimated_time_min=response_payload.get('estimated_time_min'),
-                    result_json=response_payload
+                    result_json=save_json,
                 )
                 db.session.add(record)
                 db.session.commit()
+                logger.info(f"History saved: user_id={user_id} username={username}")
             except Exception as log_err:
-                logger.warning(f"Failed to log search history: {log_err}")
+                db.session.rollback()
+                logger.error(f"Failed to save history: {log_err}", exc_info=True)
 
             return jsonify(response_payload), 200
             
