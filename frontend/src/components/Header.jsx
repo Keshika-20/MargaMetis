@@ -4,14 +4,14 @@ import { Navigation2 } from 'lucide-react';
 
 export const Header = ({ user, onLoginClick, onLogoutClick }) => (
   <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 z-50 shadow-sm">
-    <div className="flex items-center gap-2.5 flex-1">
+    <Link to="/" className="flex items-center gap-2.5 flex-1 no-underline">
       <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
         <Navigation2 className="w-4 h-4 text-white" />
       </div>
       <span className="font-semibold text-gray-900 text-base">MargaMetis</span>
       <span className="text-gray-300 hidden sm:block">·</span>
       <span className="text-xs text-gray-400 hidden sm:block">Graph Algorithms + LLM Route Intelligence</span>
-    </div>
+    </Link>
 
     <div className="flex items-center gap-2">
       {user ? (
