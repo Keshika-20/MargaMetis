@@ -2,13 +2,15 @@ from flask import Blueprint, request, jsonify, session
 import logging
 import os
 import time
-from typing import Tuple
 
 import osmnx as ox
 
 from route_optimizer.optimizer import RouteOptimizer
 from route_optimizer.utils.helpers import haversine_distance_m
 from route_optimizer.intelligence.graph_engine import GraphEngine
+from route_optimizer.intelligence.constraint_engine import ConstraintEngine
+from route_optimizer.intelligence.cost_function import CostFunctionGenerator
+from route_optimizer.intelligence.route_ranker import RouteRanker
 from app.models import db, User, SearchHistory
 from app import cache as redis_cache
 
@@ -20,7 +22,6 @@ optimizer = None
 
 
 def get_optimizer():
-    """Get or create optimizer instance."""
     global optimizer
     if optimizer is None:
         optimizer = RouteOptimizer()
@@ -29,20 +30,6 @@ def get_optimizer():
 
 @route_bp.route('/route/calculate', methods=['POST'])
 def calculate_route():
-    """
-    Calculate shortest route between two locations.
-    
-    Request JSON:
-    {
-        "origin": "Location name or coords",
-        "destination": "Location name or coords",
-        "origin_coords": [lat, lon] (optional),
-        "dest_coords": [lat, lon] (optional)
-    }
-    
-    Returns:
-        JSON with route details including path, distance, and coordinates
-    """
     try:
         data = request.get_json()
         
@@ -174,10 +161,6 @@ def calculate_route():
 
 
 def _load_graph_for_coords(origin_coords, dest_coords, extra_coords=None):
-    """
-    Load graph large enough to cover origin, destination, and any waypoints.
-    extra_coords: list of (lat, lon) tuples for waypoints.
-    """
     all_coords = [origin_coords, dest_coords] + (extra_coords or [])
     lats = [c[0] for c in all_coords]
     lons = [c[1] for c in all_coords]
@@ -193,24 +176,8 @@ def _load_graph_for_coords(origin_coords, dest_coords, extra_coords=None):
     return opt
 
 
-@route_bp.route('/route/smart-disabled', methods=['POST'])  # removed from UI
+@route_bp.route('/route/smart', methods=['POST'])
 def smart_route():
-    """
-    Natural-language route planning using the full intelligence pipeline.
-
-    Request JSON:
-    {
-        "query": "fastest route avoiding tolls",
-        "origin": "Anna Nagar, Chennai",
-        "destination": "T. Nagar, Chennai",
-        "origin_coords": [lat, lon],   (optional)
-        "dest_coords":   [lat, lon],   (optional)
-        "vehicle_type":  "car",        (optional, overrides LLM)
-        "time_of_day":   17            (optional, overrides LLM)
-    }
-
-    Returns ranked routes with scores, labels, and explanations.
-    """
     try:
         data = request.get_json()
         if not data:
@@ -238,8 +205,8 @@ def smart_route():
         except Exception as geo_err:
             return jsonify({"error": f"Geocoding failed: {geo_err}"}), 400
 
-        # Extract constraints from NL query
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        # Extract constraints from NL query (Groq LLaMA 3 with rule-based fallback)
+        api_key = os.environ.get("GROQ_API_KEY")
         constraint_engine = ConstraintEngine(api_key=api_key)
         constraints = constraint_engine.extract_constraints(
             query or f"route from {origin} to {destination}"
@@ -434,20 +401,6 @@ def smart_route():
 
 @route_bp.route('/route/benchmark', methods=['POST'])
 def benchmark_route():
-    """
-    Benchmark all four pathfinding algorithms (Dijkstra, A*, Bidirectional A*,
-    Yen's K-Shortest) on the same origin→destination query.
-
-    Request JSON:
-    {
-        "origin": "Anna Nagar, Chennai",
-        "destination": "T. Nagar, Chennai",
-        "origin_coords": [lat, lon],  (optional)
-        "dest_coords":   [lat, lon]   (optional)
-    }
-
-    Returns per-algorithm: time_ms, distance, nodes_explored, path_length.
-    """
     try:
         data = request.get_json()
         if not data:
@@ -499,17 +452,6 @@ def benchmark_route():
 
 @route_bp.route('/route/geocode', methods=['POST'])
 def geocode_location():
-    """
-    Geocode a location name to coordinates.
-    
-    Request JSON:
-    {
-        "location": "Location name"
-    }
-    
-    Returns:
-        JSON with latitude and longitude
-    """
     try:
         data = request.get_json()
         location = data.get('location', '').strip()

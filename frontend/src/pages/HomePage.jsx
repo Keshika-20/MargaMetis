@@ -11,6 +11,7 @@ export const HomePage = () => {
   const [destination, setDestination] = useState('');
   const [routeType, setRouteType]     = useState('shortest');
   const [vehicleType, setVehicleType] = useState('car');
+  const [nlQuery, setNlQuery]         = useState('');
   const [route, setRoute]             = useState(null);
   const [isLoading, setIsLoading]     = useState(false);
   const [error, setError]             = useState(null);
@@ -34,12 +35,53 @@ export const HomePage = () => {
     setIsLoading(true);
     setError(null);
     setRoute(null);
+
     try {
-      const res = await routeService.calculateRoute(
-        origin, destination, null, null, routeType, undefined, vehicleType
-      );
-      if (res.success) setRoute(res);
-      else setError(res.error || 'Failed to calculate route');
+      if (nlQuery.trim()) {
+        // NL pipeline — Groq extracts constraints, A* runs with dynamic cost fn
+        const res = await routeService.smartRoute({
+          query: nlQuery,
+          origin,
+          destination,
+          vehicle_type: vehicleType,
+          time_of_day: new Date().getHours(),
+        });
+
+        if (!res.success || !res.routes?.length) {
+          setError(res.error || 'No routes found');
+          return;
+        }
+
+        const best = res.routes[0];
+        setRoute({
+          success: true,
+          cache_hit: false,
+          distance_km: parseFloat((best.distance_m / 1000).toFixed(2)),
+          distance_m: best.distance_m,
+          estimated_time_min: best.eta_min,
+          algorithm_time_ms: null,
+          nodes_explored: null,
+          path_nodes: best.path_coordinates?.length,
+          origin: res.origin,
+          destination: res.destination,
+          path_coordinates: best.path_coordinates,
+          route_type: 'smart',
+          vehicle_type: vehicleType,
+          // smart-specific fields
+          label: best.label,
+          explanation: best.explanation,
+          scores: best.score,
+          constraints: res.constraints,
+          cost_formula: res.cost_formula,
+          calculation_time_s: res.calculation_time_s,
+        });
+      } else {
+        const res = await routeService.calculateRoute(
+          origin, destination, null, null, routeType, undefined, vehicleType
+        );
+        if (res.success) setRoute(res);
+        else setError(res.error || 'Failed to calculate route');
+      }
     } catch (err) {
       setError(err?.error || err?.message || 'An error occurred');
     } finally {
@@ -57,8 +99,10 @@ export const HomePage = () => {
           <SearchBar
             origin={origin} destination={destination}
             routeType={routeType} vehicleType={vehicleType}
+            nlQuery={nlQuery}
             onOriginChange={setOrigin} onDestinationChange={setDestination}
             onRouteTypeChange={setRouteType} onVehicleTypeChange={setVehicleType}
+            onNlQueryChange={setNlQuery}
             onSearch={handleSearch} isLoading={isLoading}
           />
           {error && (

@@ -1,13 +1,3 @@
-"""
-Redis cache for geocoding results and route computations.
-
-Keys:
-  geocode:{sha256(location)}          TTL 24h  — (lat, lon) for a place name
-  route:{sha256(origin|dest|type|v)}  TTL  1h  — full route response payload
-
-Falls back gracefully when Redis is unavailable.
-"""
-
 import hashlib
 import json
 import logging
@@ -16,7 +6,7 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-_client = None        # redis.Redis instance or None
+_client = None
 _hits   = 0
 _misses = 0
 
@@ -26,32 +16,30 @@ def _redis():
     if _client is not None:
         return _client
     try:
-        import redis  # noqa: PLC0415
+        import redis
         url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
         r = redis.from_url(url, decode_responses=True, socket_connect_timeout=2)
         r.ping()
         _client = r
-        logger.info(f"Redis cache connected: {url}")
+        logger.info(f"Redis connected: {url}")
     except Exception as exc:
         logger.warning(f"Redis unavailable — caching disabled ({exc})")
-        _client = False          # sentinel: don't retry every call
+        _client = False  # sentinel so we don't retry on every request
     return _client or None
 
-
-# ── Key builders ──────────────────────────────────────────────────
 
 def _key(prefix: str, *parts: str) -> str:
     raw = "|".join(p.lower().strip() for p in parts)
     return prefix + hashlib.sha256(raw.encode()).hexdigest()[:20]
 
+
 def geocode_key(location: str) -> str:
     return _key("geocode:", location)
+
 
 def route_key(origin: str, dest: str, route_type: str, vehicle: str) -> str:
     return _key("route:", origin, dest, route_type, vehicle)
 
-
-# ── Read / Write ──────────────────────────────────────────────────
 
 def get(key: str) -> Optional[Any]:
     global _hits, _misses
@@ -79,8 +67,6 @@ def set(key: str, value: Any, ttl: int = 3600) -> None:
         pass
 
 
-# ── Stats ─────────────────────────────────────────────────────────
-
 def stats() -> dict:
     r = _redis()
     total = _hits + _misses
@@ -95,10 +81,10 @@ def stats() -> dict:
         info = r.info("stats")
         keys = r.dbsize()
         return {
-            "status":       "connected",
-            "cached_keys":  keys,
-            "cmd_hits":     info.get("keyspace_hits", 0),
-            "cmd_misses":   info.get("keyspace_misses", 0),
+            "status":      "connected",
+            "cached_keys": keys,
+            "cmd_hits":    info.get("keyspace_hits", 0),
+            "cmd_misses":  info.get("keyspace_misses", 0),
             **base,
         }
     except Exception:
