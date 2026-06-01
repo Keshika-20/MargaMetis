@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from heapq import heappush, heappop
 from typing import Any, List, Tuple, Dict
 import logging
+from typing import Optional, Any
 
 import networkx as nx
 from tqdm import tqdm
@@ -19,6 +20,7 @@ class RouteResult:
     """
     path: List[Any]
     distance_m: float
+    confidence_result: Optional[Any] = None  
 
 
 class AStarPathfinder:

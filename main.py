@@ -3,26 +3,15 @@ import time
 from typing import Tuple
 
 import osmnx as ox
-from utils.helpers import estimate_travel_time
-
+from route_optimizer.utils.helpers import haversine_distance_m, estimate_travel_time
 from route_optimizer.optimizer import RouteOptimizer
 from route_optimizer.visualization.mapper import RouteVisualizer
-from route_optimizer.utils.helpers import haversine_distance_m
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def get_location_input(prompt: str) -> str:
-    """
-    Prompt the user for a location and ensure it's not empty.
-
-    Args:
-        prompt (str): The message to display to the user.
-
-    Returns:
-        str: User-provided location.
-    """
     location = input(prompt).strip()
     if not location:
         raise ValueError("Location cannot be empty.")
@@ -30,9 +19,6 @@ def get_location_input(prompt: str) -> str:
 
 
 def main() -> None:
-    """
-    Main function to calculate and visualize the shortest route between two locations.
-    """
     try:
         from_place = get_location_input("Enter origin location (e.g., 'Gandhipuram, Coimbatore'): ")
         to_place = get_location_input("Enter destination location (e.g., 'Prozone Mall, Coimbatore'): ")
@@ -43,28 +29,39 @@ def main() -> None:
         logger.info(f"Origin Coordinates: {origin_coords}")
         logger.info(f"Destination Coordinates: {dest_coords}")
 
-        # Estimate graph radius
         direct_dist = haversine_distance_m(*origin_coords, *dest_coords)
-        graph_radius = max(int(direct_dist * 1.5), 3000)  # Ensure minimum radius of 3 km
+        graph_radius = max(int(direct_dist * 1.5), 3000)
         mid_point = ((origin_coords[0] + dest_coords[0]) / 2,
                      (origin_coords[1] + dest_coords[1]) / 2)
 
-        # Load graph and calculate shortest path
         optimizer = RouteOptimizer()
         optimizer.load_graph(center_point=mid_point, radius_m=graph_radius)
 
         logger.info("Calculating shortest route...")
         start_time = time.time()
-        result = optimizer.find_shortest_route(origin_coords, dest_coords)
+        result = optimizer.find_shortest_route(origin_coords, dest_coords, departure_hour=12)
         duration = time.time() - start_time
 
         print("\nRoute Found!")
         print(f"Total Distance: {result.distance_m / 1000:.2f} km")
         print(f"Calculation Time: {duration:.3f} seconds\n")
-        travel_time_min = estimate_travel_time(result.distance_m, avg_speed_kmh=40.0)
-        print(f"Estimated Travel Time: {travel_time_min:.1f} minutes\n")
 
-        # Visualize the route
+        times = estimate_travel_time(result.distance_m)
+        print("Estimated Travel Times:")
+        for mode, t in times.items():
+            print(f"  {mode}: {t:.1f} minutes")
+        print()
+
+        if result.confidence_result:
+            cr = result.confidence_result
+            print(f"Route Confidence: {cr.confidence:.1f}% ({cr.risk_level} risk)")
+            print(f"ETA: {cr.eta_minutes:.0f} min "
+                  f"(best {cr.eta_range[0]:.0f} – worst {cr.eta_range[1]:.0f} min)")
+            if cr.warnings:
+                for w in cr.warnings:
+                    print(f"  ⚠ {w}")
+            print()
+
         RouteVisualizer.create_and_show_map(optimizer.graph, result, origin_coords, dest_coords)
 
     except ValueError as ve:
