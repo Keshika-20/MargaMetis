@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Navigation, Zap, Search, Database } from 'lucide-react';
+import { Clock, Navigation, Zap, Search, Database, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 const Stat = ({ icon, label, value, sub, color }) => (
   <div className={`rounded-xl p-4 ${color}`}>
@@ -124,6 +124,68 @@ export const RouteDetails = ({ route }) => {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Confidence panel */}
+      {route.confidence && (
+        <div className="border border-gray-100 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-gray-400" />
+              <span className="text-xs font-medium text-gray-500">Route Confidence</span>
+            </div>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              route.confidence.risk_level === 'Low'    ? 'bg-green-50 text-green-700' :
+              route.confidence.risk_level === 'Medium' ? 'bg-amber-50 text-amber-700' :
+                                                          'bg-red-50 text-red-600'
+            }`}>
+              {route.confidence.risk_level} risk
+            </span>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <span>Reliability</span>
+              <span className="font-semibold text-gray-700">{route.confidence.score}%</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  route.confidence.score >= 75 ? 'bg-green-400' :
+                  route.confidence.score >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                }`}
+                style={{ width: `${route.confidence.score}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-xs text-center">
+            {Object.entries(route.confidence.breakdown).map(([k, v]) => (
+              <div key={k} className="bg-gray-50 rounded-lg py-2">
+                <p className="font-semibold text-gray-700">{v}%</p>
+                <p className="text-gray-400 capitalize mt-0.5">{k.replace(/_/g, ' ')}</p>
+              </div>
+            ))}
+          </div>
+
+          {route.confidence.eta_range?.length === 2 && (
+            <p className="text-xs text-gray-400">
+              ETA range — best <span className="text-gray-600 font-medium">{route.confidence.eta_range[0]} min</span>
+              {' '}to worst <span className="text-gray-600 font-medium">{route.confidence.eta_range[1]} min</span>
+            </p>
+          )}
+
+          {route.confidence.warnings?.length > 0 && (
+            <div className="space-y-1">
+              {route.confidence.warnings.map((w, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs text-amber-700">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
