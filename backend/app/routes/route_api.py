@@ -11,6 +11,7 @@ from route_optimizer.intelligence.graph_engine import GraphEngine
 from route_optimizer.intelligence.constraint_engine import ConstraintEngine
 from route_optimizer.intelligence.cost_function import CostFunctionGenerator
 from route_optimizer.intelligence.route_ranker import RouteRanker
+from route_optimizer.confidence_scorer import RouteConfidenceScorer
 from app.models import db, User, SearchHistory
 from app import cache as redis_cache
 
@@ -131,6 +132,25 @@ def calculate_route():
                 for n in result["path"]
             ]
 
+            _AVG_SPEED = {"car": 40, "bike": 25, "bus": 30, "truck": 25, "auto": 35}
+            try:
+                scorer = RouteConfidenceScorer(optimizer_instance.graph)
+                conf = scorer.score(
+                    result["path"],
+                    departure_hour=time_of_day,
+                    avg_speed_kmh=_AVG_SPEED.get(vehicle_type, 40),
+                )
+                confidence_data = {
+                    "score":      conf.confidence,
+                    "risk_level": conf.risk_level,
+                    "eta_range":  list(conf.eta_range),
+                    "breakdown":  conf.breakdown,
+                    "warnings":   conf.warnings,
+                }
+            except Exception as ce:
+                logger.warning(f"Confidence scoring failed: {ce}")
+                confidence_data = None
+
             response_payload = {
                 'success':            True,
                 'cache_hit':          False,
@@ -146,6 +166,7 @@ def calculate_route():
                 'estimated_time_min': result["estimated_time_min"],
                 'route_type':         route_type,
                 'vehicle_type':       vehicle_type,
+                'confidence':         confidence_data,
             }
 
             # Store in Redis cache
