@@ -23,3 +23,5 @@ memory/
 ml/saved_models/
 graph_cache/
 cache/
+.venv/
+venv/

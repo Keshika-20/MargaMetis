@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-08-11T05:54:59.908550+00:00",
+  "origin": {
+    "name": "Chennai Central Railway Station, Chennai, India",
+    "coords": [
+      13.0825901,
+      80.2763077
+    ]
+  },
+  "destination": {
+    "name": "T Nagar, Chennai, India",
+    "coords": [
+      13.0378289,
+      80.231836
+    ]
+  },
+  "graph_nodes": 50727,
+  "graph_edges": 129181,
+  "graph_load_s": 35.12,
+  "algorithm_benchmark": {
+    "dijkstra": {
+      "time_ms": 94.224,
+      "distance": 8756.99,
+      "nodes_explored": 18533,
+      "path_length": 75
+    },
+    "astar": {
+      "time_ms": 17.511,
+      "distance": 8756.99,
+      "nodes_explored": 2414,
+      "path_length": 75,
+      "nodes_reduction_x": 7.68,
+      "time_reduction_x": 5.38
+    },
+    "bidirectional_astar": {
+      "time_ms": 8.903,
+      "distance": 8756.99,
+      "nodes_explored": 1264,
+      "path_length": 75,
+      "nodes_reduction_x": 14.66,
+      "time_reduction_x": 10.58
+    },
+    "yen_k_shortest": {
+      "time_ms": 568.457,
+      "paths_found": 3,
+      "distances": [
+        8756.99,
+        8762.87,
+        8767.6
+      ]
+    }
+  },
+  "cache_benchmark": {
+    "cold_ms": 4807.7,
+    "warm_ms": 8.3,
+    "speedup_x": 576.2,
+    "cold_cache_hit": false,
+    "warm_cache_hit": true
+  }
+}
