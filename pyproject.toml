@@ -1,0 +1,10 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: pure-logic tests, no network/DB/Redis",
+    "smoke: fast liveness checks that the app wires together",
+    "integration: Flask test client + sqlite + optionally real Redis, no live OSM network calls",
+    "e2e: real Flask + real Redis + real OSM network data, slower",
+    "spec: API contract/JSON-schema conformance tests",
+]
+addopts = "-ra"
